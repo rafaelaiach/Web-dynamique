@@ -8,7 +8,7 @@ export default function PropertyPhoto({ photo, style }) {
   if (!photo || failed) return <NoImage style={style} />;
   return (
     <Image
-      source={{ uri: photo.uri }}
+      source={photo.source || { uri: photo.uri }}
       style={[{ backgroundColor: '#CCCCCC' }, style]}
       resizeMode="cover"
       onError={() => setFailed(true)}
