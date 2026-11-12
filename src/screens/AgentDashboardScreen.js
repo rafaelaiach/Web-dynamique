@@ -8,7 +8,7 @@ import PropertyCard from '../components/PropertyCard';
 import { useAuth } from '../context/AuthContext';
 import { getPropertiesForAgent } from '../services/PropertyService';
 import { getAgentStats } from '../services/StatsService';
-import { colors, formatPrice, radius, spacing } from '../theme';
+import { colors, formatPrice, spacing } from '../theme';
 
 function Stat({ value, label }) {
   return (
@@ -88,18 +88,18 @@ export default function AgentDashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
+  content: { padding: 12, gap: 14, paddingBottom: 40 },
   welcome: { fontSize: 15, color: colors.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  stat: { flexBasis: '47%', flexGrow: 1, backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, gap: 2 },
-  statValue: { fontSize: 22, fontWeight: '800', color: colors.text },
+  stat: { flexBasis: '45%', flexGrow: 1, borderWidth: 1, borderColor: '#999', padding: 8 },
+  statValue: { fontSize: 20, fontWeight: 'bold' },
   statLabel: { fontSize: 13, color: colors.muted },
-  panel: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, gap: spacing.md },
-  h2: { fontSize: 16, fontWeight: '700', color: colors.text },
+  panel: { borderWidth: 1, borderColor: '#999', padding: 8, gap: 6 },
+  h2: { fontSize: 15, fontWeight: 'bold' },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   barLabel: { width: 120, fontSize: 13, color: colors.text },
-  barTrack: { flex: 1, height: 10, backgroundColor: colors.background, borderRadius: 5, overflow: 'hidden' },
-  bar: { height: 10, backgroundColor: colors.primary, borderRadius: 5 },
+  barTrack: { flex: 1, height: 10, backgroundColor: '#EEEEEE' },
+  bar: { height: 10, backgroundColor: '#888888' },
   barValue: { width: 20, textAlign: 'right', fontWeight: '700', color: colors.text },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   userName: { flex: 1, fontSize: 14, color: colors.text },

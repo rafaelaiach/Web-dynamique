@@ -1,26 +1,26 @@
-// Shared colours and spacing so every screen looks the same.
+// Shared colours and spacing.
 
 export const colors = {
-  background: '#F5F7FA',
+  background: '#FFFFFF',
   card: '#FFFFFF',
-  text: '#15233D',
-  muted: '#5B6780',
-  border: '#D9DFE9',
-  primary: '#1E3A6E',
-  accent: '#C2410C',
-  error: '#B91C1C',
-  errorSoft: '#FBE4E4',
+  text: '#000000',
+  muted: '#777777',
+  border: '#999999',
+  primary: '#000000',
+  accent: '#000000',
+  error: '#000000',
+  errorSoft: '#EEEEEE',
   status: {
-    draft: { bg: '#EAEEF5', fg: '#5B6780', label: 'Draft' },
-    active: { bg: '#E3F4E8', fg: '#15803D', label: 'Active' },
-    under_offer: { bg: '#FBF1D9', fg: '#A16207', label: 'Under Offer' },
-    sold: { bg: '#E3EBFC', fg: '#1D4ED8', label: 'Sold' },
-    rented: { bg: '#E3EBFC', fg: '#1D4ED8', label: 'Rented' },
+    draft: { bg: 'transparent', fg: '#000000', label: 'draft' },
+    active: { bg: 'transparent', fg: '#000000', label: 'Active' },
+    under_offer: { bg: 'transparent', fg: '#000000', label: 'under offer' },
+    sold: { bg: 'transparent', fg: '#000000', label: 'SOLD' },
+    rented: { bg: 'transparent', fg: '#000000', label: 'Rented' },
   },
 };
 
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
-export const radius = 10;
+export const spacing = { xs: 3, sm: 7, md: 10, lg: 15, xl: 22 };
+export const radius = 0;
 
 export function formatPrice(price, listingType) {
   const text = '£' + Math.round(price).toLocaleString('en-GB');

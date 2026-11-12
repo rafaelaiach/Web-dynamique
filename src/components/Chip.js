@@ -1,5 +1,4 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { colors, spacing } from '../theme';
 
 /** Small toggle button used for filters and role selection. */
 export default function Chip({ label, selected, onPress }) {
@@ -10,17 +9,14 @@ export default function Chip({ label, selected, onPress }) {
       onPress={onPress}
       style={[styles.chip, selected && styles.selected]}
     >
-      <Text style={[styles.text, selected && styles.selectedText]}>{label}</Text>
+      <Text style={selected ? styles.selectedText : styles.text}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  chip: {
-    paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 99,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card,
-  },
-  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  text: { fontSize: 13, color: colors.text, fontWeight: '500' },
-  selectedText: { color: '#fff', fontWeight: '600' },
+  chip: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#999' },
+  selected: { borderColor: '#000', borderWidth: 2 },
+  text: { fontSize: 13 },
+  selectedText: { fontSize: 13, fontWeight: 'bold' },
 });

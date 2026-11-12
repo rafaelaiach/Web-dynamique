@@ -59,7 +59,7 @@ export default function MyListingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
-  header: { gap: spacing.md, marginBottom: spacing.lg },
+  content: { padding: 10, paddingBottom: 40 },
+  header: { gap: 8, marginBottom: 10 },
   summary: { fontSize: 13, color: colors.muted },
 });

@@ -102,12 +102,12 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
-  header: { gap: spacing.md, marginBottom: spacing.md },
-  greeting: { fontSize: 22, fontWeight: '800', color: colors.text },
+  content: { padding: 10, paddingBottom: 40 },
+  header: { gap: 8, marginBottom: 12 },
+  greeting: { fontSize: 20 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' },
   more: { paddingHorizontal: spacing.sm, paddingVertical: 6 },
-  moreText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  moreText: { textDecorationLine: 'underline', fontSize: 13 },
   moreBox: { gap: spacing.md },
   priceRow: { flexDirection: 'row', gap: spacing.md },
   count: { fontSize: 13, color: colors.muted },

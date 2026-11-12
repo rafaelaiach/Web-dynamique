@@ -59,7 +59,6 @@ export default function LoginScreen({ navigation }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <View style={styles.logo}><Text style={styles.logoText}>CE</Text></View>
             <Text style={styles.title}>City Estate</Text>
             <Text style={styles.subtitle}>Buy, sell and rent property</Text>
           </View>
@@ -106,7 +105,7 @@ export default function LoginScreen({ navigation }) {
             {dbError
               ? `Database error: ${dbError}`
               : dbInfo
-                ? `● Connected to ${dbInfo.name} · ${dbInfo.tables.length} tables · ${dbInfo.properties} properties`
+                ? `Connected to ${dbInfo.name} · ${dbInfo.tables.length} tables · ${dbInfo.properties} properties`
                 : 'Connecting to database…'}
           </Text>
         </ScrollView>
@@ -117,21 +116,19 @@ export default function LoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.xl },
-  header: { alignItems: 'center', gap: spacing.xs },
-  logo: { width: 56, height: 56, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  logoText: { color: '#fff', fontWeight: '800', fontSize: 20 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text },
-  subtitle: { fontSize: 15, color: colors.muted },
-  form: { gap: spacing.lg },
+  content: { flexGrow: 1, paddingTop: 70, paddingLeft: 18, paddingRight: 12, gap: 14 },
+  header: { marginBottom: 10 },
+      title: { fontSize: 26, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, color: colors.muted, marginLeft: 2 },
+  form: { gap: 9 },
   formError: { backgroundColor: colors.errorSoft, color: colors.error, padding: spacing.md, borderRadius: radius, fontSize: 14 },
-  link: { alignItems: 'center', paddingVertical: spacing.xs },
+  link: { paddingVertical: 6 },
   linkText: { color: colors.muted, fontSize: 14 },
-  linkBold: { color: colors.primary, fontWeight: '700' },
-  demo: { gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.lg },
-  demoTitle: { fontSize: 12.5, color: colors.muted, textAlign: 'center' },
-  demoRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
-  demoBtn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 99, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
-  demoBtnText: { fontSize: 13, fontWeight: '600', color: colors.text },
-  db: { textAlign: 'center', fontSize: 12, color: '#15803D' },
+  linkBold: { textDecorationLine: 'underline' },
+  demo: { gap: 5, marginTop: 20 },
+  demoTitle: { fontSize: 12, color: colors.muted },
+  demoRow: { flexDirection: 'row', gap: 6 },
+  demoBtn: { paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#999' },
+  demoBtnText: { fontSize: 13 },
+  db: { fontSize: 11, color: '#777', marginTop: 8 },
 });

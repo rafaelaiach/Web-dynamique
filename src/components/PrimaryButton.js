@@ -1,7 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors, radius, spacing } from '../theme';
 
-/** variant: "primary" (filled) or "outline" */
+/** variant: "primary" or "outline" */
 export default function PrimaryButton({ title, onPress, loading, disabled, variant = 'primary', style }) {
   const outline = variant === 'outline';
   return (
@@ -9,24 +8,15 @@ export default function PrimaryButton({ title, onPress, loading, disabled, varia
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.btn,
-        outline && styles.outline,
-        (pressed || disabled) && { opacity: 0.6 },
-        style,
-      ]}
+      style={[styles.btn, outline && styles.outline, disabled && { opacity: 0.4 }, style]}
     >
-      {loading ? (
-        <ActivityIndicator color={outline ? colors.primary : '#fff'} />
-      ) : (
-        <Text style={[styles.text, outline && { color: colors.primary }]}>{title}</Text>
-      )}
+      {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.text}>{title}</Text>}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  btn: { backgroundColor: colors.primary, borderRadius: radius, paddingVertical: spacing.md + 2, alignItems: 'center' },
-  outline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary },
-  text: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  btn: { backgroundColor: '#DDDDDD', borderWidth: 1, borderColor: '#000', paddingVertical: 8, alignItems: 'center' },
+  outline: { backgroundColor: '#FFFFFF' },
+  text: { color: '#000', fontSize: 14 },
 });

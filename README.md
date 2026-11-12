@@ -35,8 +35,7 @@ The login screen has buttons that fill these in.
 ```
 App.js                 opens the database, then shows the navigator
 src/
-  assets/              mock property photos + images.js
-  components/          PropertyCard, StatusPill, TextField, PrimaryButton, Chip, EmptyState
+  components/          PropertyCard, StatusPill, TextField, PrimaryButton, Chip, EmptyState, NoImage (mocked image)
   context/             AuthContext (logged-in user)
   db/                  database.js, schema.js (tables, triggers, views), seed.js (demo data)
   navigation/          RootNavigator: login stack, then tabs for the user's role

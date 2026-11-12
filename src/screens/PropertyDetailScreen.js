@@ -2,14 +2,14 @@
 // The "Make an offer" / "Apply to rent" buttons are wired up in Week 3.
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { propertyImage } from '../assets/images';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import EmptyState from '../components/EmptyState';
+import NoImage from '../components/NoImage';
 import PrimaryButton from '../components/PrimaryButton';
 import StatusPill from '../components/StatusPill';
 import { useAuth } from '../context/AuthContext';
 import { getPropertyById, isFavourite, toggleFavourite } from '../services/PropertyService';
-import { capitalise, colors, formatPrice, radius, spacing } from '../theme';
+import { capitalise, colors, formatPrice, spacing } from '../theme';
 
 export default function PropertyDetailScreen({ route }) {
   const { id } = route.params;
@@ -36,7 +36,7 @@ export default function PropertyDetailScreen({ route }) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Image source={propertyImage(p.image)} style={styles.image} />
+      <NoImage style={styles.image} />
       <View style={styles.titleRow}>
         <Text style={styles.title}>{p.title}</Text>
         <StatusPill status={p.status} />
@@ -83,18 +83,18 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   screen: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: spacing.xl * 2, gap: spacing.sm },
-  image: { width: '100%', height: 220 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, marginTop: spacing.md },
-  title: { flex: 1, fontSize: 22, fontWeight: '800', color: colors.text },
-  price: { fontSize: 20, fontWeight: '700', color: colors.text, paddingHorizontal: spacing.lg },
-  facts: { fontSize: 14, color: colors.text, paddingHorizontal: spacing.lg },
+  image: { width: '100%', height: 160 },
+  titleRow: { paddingHorizontal: 10, marginTop: spacing.md },
+  title: { fontSize: 20, fontWeight: 'bold' },
+  price: { fontSize: 18, paddingHorizontal: 14 },
+  facts: { fontSize: 14, paddingHorizontal: 10 },
   address: { fontSize: 14, color: colors.muted, paddingHorizontal: spacing.lg },
-  body: { fontSize: 15, lineHeight: 22, color: colors.text, paddingHorizontal: spacing.lg, marginTop: spacing.sm },
+  body: { fontSize: 14, paddingHorizontal: 18, marginTop: 4 },
   meta: { fontSize: 13, color: colors.muted, paddingHorizontal: spacing.lg },
   actions: { gap: spacing.md, padding: spacing.lg },
   note: { fontSize: 13, color: colors.muted, textAlign: 'center' },
-  history: { margin: spacing.lg, padding: spacing.lg, backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.border, gap: spacing.sm },
-  h2: { fontSize: 16, fontWeight: '700', color: colors.text },
+  history: { margin: 10, marginTop: 20, padding: 8, borderTopWidth: 1, borderColor: '#999', gap: 4 },
+  h2: { fontSize: 15, fontWeight: 'bold', textDecorationLine: 'underline' },
   historyRow: { gap: 2 },
   historyText: { fontSize: 14, color: colors.text, fontWeight: '600' },
   historyMeta: { fontSize: 12, color: colors.muted },
