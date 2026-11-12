@@ -35,7 +35,8 @@ The login screen has buttons that fill these in.
 ```
 App.js                 opens the database, then shows the navigator
 src/
-  components/          PropertyCard, StatusPill, TextField, PrimaryButton, Chip, EmptyState, NoImage (mocked image)
+  assets/              photos.js: real property photos (Unsplash, free licence)
+  components/          PropertyCard, StatusPill, TextField, PrimaryButton, Chip, EmptyState, PropertyPhoto, NoImage (shown if a photo can't load)
   context/             AuthContext (logged-in user)
   db/                  database.js, schema.js (tables, triggers, views), seed.js (demo data)
   navigation/          RootNavigator: login stack, then tabs for the user's role
@@ -53,3 +54,10 @@ tests/                 npm test: 27 checks against a real SQLite database
 - Every status change is written to `status_history`.
 
 To reset the demo data, delete the app from the phone (or clear Expo Go's data) and open it again.
+
+## Photos
+
+Property photos come from [Unsplash](https://unsplash.com) and are free to use under the
+[Unsplash License](https://unsplash.com/license). They load from the internet, so the phone needs a
+connection; without one, a grey "No image" box is shown. Photographers are credited under each
+property's photos and in `src/assets/photos.js`.

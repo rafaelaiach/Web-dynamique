@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { mainPhoto } from '../assets/photos';
 import { capitalise, formatPrice } from '../theme';
-import NoImage from './NoImage';
+import PropertyPhoto from './PropertyPhoto';
 import StatusPill from './StatusPill';
 
 /** One property in a list. `extra` is an optional line under the price (e.g. "2 pending offers"). */
@@ -8,7 +9,7 @@ export default function PropertyCard({ property, onPress, extra, showStatus = tr
   const p = property;
   return (
     <Pressable onPress={onPress} style={styles.card}>
-      <NoImage style={styles.image} />
+      <PropertyPhoto photo={mainPhoto(p.image)} style={styles.image} />
       <View style={styles.body}>
         <Text style={styles.title}>{p.title}</Text>
         {showStatus ? <StatusPill status={p.status} /> : null}

@@ -2,10 +2,11 @@
 // The "Make an offer" / "Apply to rent" buttons are wired up in Week 3.
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { propertyPhotos } from '../assets/photos';
 import EmptyState from '../components/EmptyState';
-import NoImage from '../components/NoImage';
 import PrimaryButton from '../components/PrimaryButton';
+import PropertyPhoto from '../components/PropertyPhoto';
 import StatusPill from '../components/StatusPill';
 import { useAuth } from '../context/AuthContext';
 import { getPropertyById, isFavourite, toggleFavourite } from '../services/PropertyService';
@@ -17,6 +18,7 @@ export default function PropertyDetailScreen({ route }) {
   const [property, setProperty] = useState(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     (async () => {
@@ -33,10 +35,21 @@ export default function PropertyDetailScreen({ route }) {
   const p = property;
   const isBuyer = user.role === 'buyer';
   const canAct = isBuyer && p.status === 'active';
+  const photos = propertyPhotos(p.image);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <NoImage style={styles.image} />
+      {/* Swipe left/right to see more photos */}
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+        {(photos.length ? photos : [null]).map((photo, i) => (
+          <PropertyPhoto key={i} photo={photo} style={[styles.image, { width }]} />
+        ))}
+      </ScrollView>
+      {photos.length ? (
+        <Text style={styles.credit}>
+          {photos.length} photos - swipe to see more. Photos: {[...new Set(photos.map((ph) => ph.credit))].join(', ')} / Unsplash
+        </Text>
+      ) : null}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{p.title}</Text>
         <StatusPill status={p.status} />
@@ -83,7 +96,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   screen: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: spacing.xl * 2, gap: spacing.sm },
-  image: { width: '100%', height: 160 },
+  image: { height: 220 },
+  credit: { fontSize: 10, color: '#777', paddingHorizontal: 10 },
   titleRow: { paddingHorizontal: 10, marginTop: spacing.md },
   title: { fontSize: 20, fontWeight: 'bold' },
   price: { fontSize: 18, paddingHorizontal: 14 },
