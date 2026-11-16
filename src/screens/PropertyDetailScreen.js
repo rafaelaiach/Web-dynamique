@@ -1,33 +1,53 @@
 // Full details of one property, its status history, and a favourite toggle for buyers.
-// The "Make an offer" / "Apply to rent" buttons are wired up in Week 3.
+// Week 3: the owner (seller) can edit, publish / unpublish, review offers and delete here.
+// The buyer "Make an offer" / "Apply to rent" buttons are still to be wired up (buyer screens).
 
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { propertyPhotos } from '../assets/photos';
 import EmptyState from '../components/EmptyState';
 import PrimaryButton from '../components/PrimaryButton';
 import PropertyPhoto from '../components/PropertyPhoto';
 import StatusPill from '../components/StatusPill';
 import { useAuth } from '../context/AuthContext';
-import { getPropertyById, isFavourite, toggleFavourite } from '../services/PropertyService';
+import { canDelete, changeStatus } from '../services/ListingLifecycle';
+import { deleteListing, getPropertyById, isFavourite, toggleFavourite } from '../services/PropertyService';
 import { capitalise, colors, formatPrice, spacing } from '../theme';
 
-export default function PropertyDetailScreen({ route }) {
+export default function PropertyDetailScreen({ route, navigation }) {
   const { id } = route.params;
   const { user } = useAuth();
   const [property, setProperty] = useState(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [ownerError, setOwnerError] = useState('');
   const { width } = useWindowDimensions();
 
-  useEffect(() => {
-    (async () => {
-      const p = await getPropertyById(id);
-      setProperty(p);
-      if (p && user.role === 'buyer') setSaved(await isFavourite(user.id, id));
-      setLoading(false);
-    })();
+  // Reload every time the screen comes back into view (e.g. after editing).
+  const load = useCallback(async () => {
+    const p = await getPropertyById(id);
+    setProperty(p);
+    if (p && user.role === 'buyer') setSaved(await isFavourite(user.id, id));
+    setLoading(false);
   }, [id, user]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function setStatus(to, note) {
+    setOwnerError('');
+    try { await changeStatus(id, to, user.id, note); await load(); } catch (e) { setOwnerError(e.message); }
+  }
+
+  function confirmDelete() {
+    Alert.alert('Delete this listing?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try { await deleteListing(user, id); navigation.goBack(); } catch (e) { setOwnerError(e.message); }
+        },
+      },
+    ]);
+  }
 
   if (loading) return <View style={styles.center}><ActivityIndicator /></View>;
   if (!property) return <EmptyState title="Property not found" message="It may have been removed." />;
@@ -35,6 +55,9 @@ export default function PropertyDetailScreen({ route }) {
   const p = property;
   const isBuyer = user.role === 'buyer';
   const canAct = isBuyer && p.status === 'active';
+  const isOwner = user.role === 'seller' && p.seller_id === user.id;
+  const done = p.status === 'sold' || p.status === 'rented';
+  const noun = p.listing_type === 'sale' ? 'offers' : 'applications';
   const photos = propertyPhotos(p.image);
 
   return (
@@ -77,6 +100,24 @@ export default function PropertyDetailScreen({ route }) {
         </View>
       ) : null}
 
+      {isOwner ? (
+        <View style={styles.actions}>
+          <Text style={styles.h2}>Manage listing</Text>
+          {!done ? <PrimaryButton title="Edit listing" onPress={() => navigation.navigate('EditListing', { id: p.id })} /> : null}
+          {p.status === 'draft' ? <PrimaryButton title="Publish (make Active)" onPress={() => setStatus('active', 'Published by seller')} /> : null}
+          {p.status === 'active' ? (
+            <PrimaryButton title="Unpublish (back to draft)" variant="outline" onPress={() => setStatus('draft', 'Unpublished by seller')} />
+          ) : null}
+          {p.status !== 'draft' ? (
+            <PrimaryButton title={`Review ${noun} (${p.pending_offers} pending)`}
+              onPress={() => navigation.navigate('ReviewOffers', { id: p.id })} />
+          ) : null}
+          {canDelete(p.status) ? <PrimaryButton title="Delete listing" variant="outline" onPress={confirmDelete} /> : null}
+          {p.status === 'under_offer' ? <Text style={styles.note}>Price, type and location are locked while under offer.</Text> : null}
+          {ownerError ? <Text style={styles.note}>{ownerError}</Text> : null}
+        </View>
+      ) : null}
+
       <View style={styles.history}>
         <Text style={styles.h2}>Status history</Text>
         {p.history.map((h) => (
@@ -84,6 +125,7 @@ export default function PropertyDetailScreen({ route }) {
             <Text style={styles.historyText}>
               {h.from_status ? `${colors.status[h.from_status].label} → ` : ''}{colors.status[h.to_status].label}
             </Text>
+            {h.note ? <Text style={styles.historyMeta}>{h.note}</Text> : null}
             <Text style={styles.historyMeta}>{h.changed_by_name} · {h.changed_at.slice(0, 16)}</Text>
           </View>
         ))}

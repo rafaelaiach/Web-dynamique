@@ -64,4 +64,73 @@ await db.runAsync("UPDATE properties SET description='Updated' WHERE id=?", jack
 await db.runAsync("UPDATE properties SET status='sold' WHERE id=?", jack.id);
 await assert.rejects(db.runAsync("UPDATE properties SET status='active' WHERE id=?", jack.id), /Invalid status transition/); ok('Database blocks Sold → Active');
 await assert.rejects(db.runAsync("UPDATE properties SET status='rented' WHERE id=?", oak.id), /Invalid status transition|CHECK/); ok('Sale listing can never become Rented');
+
+// ---------------- Week 3: seller features + lifecycle / offer services ----------------
+const Life = await import(R + 'services/ListingLifecycle.js');
+const Offer = await import(R + 'services/OfferService.js');
+
+assert.deepEqual(Life.allowedTransitions('under_offer', 'sale'), ['active', 'sold']);
+assert.deepEqual(Life.allowedTransitions('sold', 'sale'), []);
+assert.equal(Life.isFieldLocked('under_offer', 'price'), true); assert.equal(Life.isFieldLocked('under_offer', 'description'), false); ok('Lifecycle rules: transitions and locked fields');
+
+const form = { title: 'Canal View', description: 'Two-bed flat by the canal.', price: '1300', listing_type: 'rent', property_type: 'flat',
+  address_line: '9 Canal Street', city: 'Manchester', postcode: 'm1 3hz', bedrooms: '2', bathrooms: '1' };
+assert.deepEqual(Object.keys(Prop.validateListing({ ...form, title: '', price: '-5', postcode: 'nope', bedrooms: '1.5' })).sort(), ['bedrooms', 'postcode', 'price', 'title']); ok('Listing form validation');
+await assert.rejects(Prop.createListing(buyer, form), /Only sellers/); ok('Buyer cannot create a listing');
+const newId = await Prop.createListing(seller, form);
+let created = await Prop.getPropertyById(newId);
+assert.equal(created.status, 'draft'); assert.equal(created.postcode, 'M1 3HZ'); assert.deepEqual(created.history.map((h) => h.to_status), ['draft']); ok('Seller creates a listing: starts as Draft with history');
+assert.equal((await Prop.getPropertiesForSeller(seller.id)).length, 5); ok('New listing appears in My listings');
+assert.equal(await Prop.updateListing(seller, newId, { price: '1250', description: 'Updated text' }), true);
+assert.equal((await Prop.getPropertyById(newId)).price, 1250); ok('Seller edits price and description');
+const lena = await Auth.login('lena@cityestate.com', 'password123');
+await assert.rejects(Prop.updateListing(lena, newId, { title: 'Hijack' }), /your own/); ok("Seller cannot edit someone else's listing");
+await Life.changeStatus(newId, 'active', seller.id, 'Published');
+assert.equal((await Prop.getPropertyById(newId)).history.at(-1).to_status, 'active'); ok('Publish Draft → Active writes history');
+await assert.rejects(Life.changeStatus(newId, 'sold', seller.id), /Invalid status transition/); ok('Service refuses Active → Sold');
+
+// Offers on Elm Road (sale, active, 1 pending offer from the seed)
+const elm = (await Prop.getPropertiesForSeller(seller.id)).find((p) => p.title === 'Elm Road');
+const o2 = await Offer.makeOffer(buyer.id, elm.id, 305000, 'Higher offer');
+const nb = await Auth.register({ fullName: 'Second Buyer', email: 'b2@test.com', password: 'secret1', role: 'buyer' });
+const o3 = await Offer.makeOffer(nb.id, elm.id, 310000);
+await assert.rejects(Offer.makeOffer(buyer.id, elm.id, 0), /above/); ok('Buyer can make several offers; zero refused');
+let d = await Offer.getDecisionsForProperty(elm.id);
+assert.equal(d.kind, 'offer'); assert.equal(d.items.length, 3); ok('Seller sees all offers for a property');
+await assert.rejects(Offer.acceptOffer(o3, lena), /Only the seller or the managing agent/); ok('Another seller cannot accept');
+await Offer.acceptOffer(o3, seller);
+d = await Offer.getDecisionsForProperty(elm.id);
+assert.deepEqual(d.items.map((o) => o.status).sort(), ['accepted', 'rejected', 'rejected']);
+let elmNow = await Prop.getPropertyById(elm.id);
+assert.equal(elmNow.status, 'under_offer'); assert.match(elmNow.history.at(-1).note, /310,000/); ok('Accept offer: others rejected, status Under Offer, history written');
+await assert.rejects(Offer.acceptOffer(o2, seller), /pending/);
+await assert.rejects(db.runAsync("UPDATE offers SET status='accepted' WHERE id=?", o2), /UNIQUE/); ok('Second accepted offer impossible (service and database)');
+await assert.rejects(Offer.makeOffer(buyer.id, elm.id, 320000), /not accepting/); ok('No new offers once Under Offer');
+await assert.rejects(Prop.updateListing(seller, elm.id, { price: '1' }), /locked/);
+assert.equal(await Prop.updateListing(seller, elm.id, { description: 'Still editable' }), true); ok('Edit form: price locked, description editable when Under Offer');
+await assert.rejects(Prop.deleteListing(seller, elm.id), /cannot be deleted/); ok('Cannot delete a listing under offer');
+await Offer.cancelDeal(elm.id, seller);
+elmNow = await Prop.getPropertyById(elm.id);
+assert.equal(elmNow.status, 'active'); assert.equal((await Offer.getDecisionsForProperty(elm.id)).items.find((o) => o.id === o3).status, 'withdrawn'); ok('Deal falls through: back to Active, accepted offer withdrawn');
+const o4 = await Offer.makeOffer(buyer.id, elm.id, 312000);
+await Offer.acceptOffer(o4, seller);
+assert.equal(await Offer.completeDeal(elm.id, seller), 'sold');
+assert.deepEqual((await Prop.getPropertyById(elm.id)).history.map((h) => h.to_status).slice(-4), ['under_offer', 'active', 'under_offer', 'sold']); ok('Re-accept then mark Sold, full history kept');
+
+// Rental applications on Meadow Bungalow (rent, active)
+const meadow = (await Prop.getPropertiesForSeller(seller.id)).find((p) => p.title === 'Meadow Bungalow');
+await assert.rejects(Offer.makeOffer(buyer.id, meadow.id, 1000), /only for properties for sale/);
+await assert.rejects(Offer.applyToRent(buyer.id, meadow.id, '12/01/2027'), /YYYY-MM-DD/); ok('Rental: no offers, date format checked');
+const a1 = await Offer.applyToRent(buyer.id, meadow.id, '2027-01-15', 'Two adults, no pets');
+const a2 = await Offer.applyToRent(nb.id, meadow.id, '2027-02-01');
+await Offer.rejectApplication(a2, seller);
+assert.equal((await Offer.getDecisionsForProperty(meadow.id)).items.find((a) => a.id === a2).status, 'rejected'); ok('Seller rejects an application');
+await Offer.acceptApplication(a1, seller);
+assert.equal((await Prop.getPropertyById(meadow.id)).status, 'under_offer');
+assert.equal(await Offer.completeDeal(meadow.id, seller), 'rented'); ok('Accept application → Under Offer → Rented');
+
+// Delete
+await Life.changeStatus(newId, 'draft', seller.id);
+await Prop.deleteListing(seller, newId);
+assert.equal(await Prop.getPropertyById(newId), null); ok('Seller deletes a listing');
 console.log(`\nAll ${n} checks passed.`);

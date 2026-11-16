@@ -6,12 +6,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import AgentDashboardScreen from '../screens/AgentDashboardScreen';
+import EditListingScreen from '../screens/EditListingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import MyListingsScreen from '../screens/MyListingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PropertyDetailScreen from '../screens/PropertyDetailScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ReviewOffersScreen from '../screens/ReviewOffersScreen';
 import { colors } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -57,6 +59,8 @@ export default function RootNavigator() {
         <>
           <Stack.Screen name="Main" component={RoleTabs} options={{ headerShown: false }} />
           <Stack.Screen name="PropertyDetail" component={PropertyDetailScreen} options={{ title: 'Property' }} />
+          <Stack.Screen name="EditListing" component={EditListingScreen} options={{ title: 'Listing' }} />
+          <Stack.Screen name="ReviewOffers" component={ReviewOffersScreen} options={{ title: 'Offers' }} />
         </>
       ) : (
         <>

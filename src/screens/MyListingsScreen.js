@@ -1,5 +1,5 @@
 // Seller home: every property the logged-in seller owns, with its status and pending offers.
-// Create / edit / delete arrive in Week 3.
+// Week 3: "+ New listing" opens the form; tap a listing to edit, publish, review offers or delete.
 
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -38,14 +38,15 @@ export default function MyListingsScreen({ navigation }) {
           <Text style={styles.summary}>
             {listings.length} total · {counts.active || 0} active · {counts.under_offer || 0} under offer · {counts.draft || 0} draft
           </Text>
-          <PrimaryButton title="+ New listing (Week 3)" disabled />
+          <PrimaryButton title="+ New listing" onPress={() => navigation.navigate('EditListing')} />
         </View>
       }
       renderItem={({ item }) => (
         <PropertyCard
           property={item}
-          extra={item.listing_type === 'sale' && item.pending_offers > 0
-            ? `${item.pending_offers} pending ${item.pending_offers === 1 ? 'offer' : 'offers'}` : null}
+          extra={item.pending_offers > 0
+            ? `${item.pending_offers} pending ${item.listing_type === 'sale' ? 'offer' : 'application'}${item.pending_offers === 1 ? '' : 's'}`
+            : null}
           onPress={() => navigation.navigate('PropertyDetail', { id: item.id })}
         />
       )}
