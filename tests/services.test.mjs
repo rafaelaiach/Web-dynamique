@@ -133,4 +133,56 @@ assert.equal(await Offer.completeDeal(meadow.id, seller), 'rented'); ok('Accept 
 await Life.changeStatus(newId, 'draft', seller.id);
 await Prop.deleteListing(seller, newId);
 assert.equal(await Prop.getPropertyById(newId), null); ok('Seller deletes a listing');
+
+// ---------------- Week 3: buyer + agent features ----------------
+const Enq = await import(R + 'services/EnquiryService.js');
+const Agent = await import(R + 'services/AgentService.js');
+
+// Buyer: favourites list, activity, withdraw
+const favs = await Prop.getFavourites(buyer.id);
+assert.deepEqual(favs.map((p) => p.title), ['Riverside Flat']); ok('Buyer sees saved favourites');
+const riverside = all.find((p) => p.title === 'Riverside Flat');
+assert.equal((await Prop.getPropertyById(riverside.id)).pending_offers, 1); ok('Seeded rental application counted as pending');
+let act = await Offer.getBuyerActivity(buyer.id);
+assert.ok(act.offers.length >= 4); assert.ok(act.applications.some((a) => a.title === 'Riverside Flat')); ok('My activity lists offers and applications');
+const pendingApp = act.applications.find((a) => a.title === 'Riverside Flat');
+await assert.rejects(Offer.withdraw('application', pendingApp.id, nb), /Not found/);
+await Offer.withdraw('application', pendingApp.id, buyer);
+act = await Offer.getBuyerActivity(buyer.id);
+assert.equal(act.applications.find((a) => a.id === pendingApp.id).status, 'withdrawn'); ok('Buyer withdraws own application (not someone else\'s)');
+
+// Enquiries
+assert.equal((await Enq.getEnquiriesForBuyer(buyer.id)).length, 1); ok('Seeded question visible to buyer');
+await assert.rejects(Enq.sendEnquiry(seller, riverside.id, 'Hello there'), /Only buyers/);
+await assert.rejects(Enq.sendEnquiry(buyer, riverside.id, 'Hi'), /at least 5/);
+const millId = (await Prop.getPropertiesForSeller(seller.id)).find((p) => p.title === 'Mill Cottage').id;
+await assert.rejects(Enq.sendEnquiry(buyer, millId, 'Can I visit?'), /not published/); ok('Question checks: buyer only, length, published only');
+const eId = await Enq.sendEnquiry(buyer, riverside.id, 'Is parking included?');
+assert.ok((await Enq.getEnquiriesForStaff(agent)).some((e) => e.id === eId));
+assert.ok((await Enq.getEnquiriesForStaff(lena)).some((e) => e.id === eId));
+assert.ok(!(await Enq.getEnquiriesForStaff(seller)).some((e) => e.id === eId)); ok('Question reaches the owner and managing agent only');
+await assert.rejects(Enq.replyEnquiry(eId, seller, 'Yes'), /Only the seller or the managing agent/);
+await Enq.replyEnquiry(eId, agent, 'Yes, one space.');
+const answered = (await Enq.getEnquiriesForBuyer(buyer.id)).find((e) => e.id === eId);
+assert.equal(answered.status, 'answered'); assert.equal(answered.replied_by_name, 'Jaya Patel'); ok('Agent replies, buyer sees the answer');
+await Enq.closeEnquiry(eId, agent);
+await assert.rejects(Enq.replyEnquiry(eId, agent, 'Again'), /closed/); ok('Closed question cannot be answered again');
+
+// Agent: review drafts
+let drafts = await Agent.getDraftsForReview(agent);
+assert.ok(drafts.some((p) => p.title === 'Mill Cottage')); ok('Agent sees drafts to review');
+await assert.rejects(Agent.approveListing(millId, seller), /Only agents/);
+await assert.rejects(Agent.returnListing(millId, agent, ''), /reason/);
+await Agent.returnListing(millId, agent, 'Add more photos');
+let mill = await Prop.getPropertyById(millId);
+assert.equal(mill.status, 'draft'); assert.equal(mill.history.at(-1).note, 'Sent back: Add more photos'); ok('Agent sends a draft back with a reason');
+await Agent.approveListing(millId, agent);
+mill = await Prop.getPropertyById(millId);
+assert.equal(mill.status, 'active'); assert.equal(mill.is_approved, 1); assert.equal(mill.agent_name, 'Jaya Patel'); ok('Agent approves: Active, approved, assigned');
+await assert.rejects(Agent.approveListing(millId, agent), /Only drafts/);
+await Agent.agentChangeStatus(millId, agent, 'draft');
+assert.equal((await Prop.getPropertyById(millId)).status, 'draft');
+await assert.rejects(Agent.agentChangeStatus(millId, agent, 'sold'), /Invalid status transition/);
+const oakId = oak.id; // not managed by the agent
+await assert.rejects(Agent.agentChangeStatus(oakId, agent, 'active'), /do not manage/); ok('Agent status change: managed properties only, lifecycle respected');
 console.log(`\nAll ${n} checks passed.`);

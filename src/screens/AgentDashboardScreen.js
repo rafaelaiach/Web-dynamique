@@ -2,22 +2,14 @@
 // plus the properties this agent manages.
 
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import PropertyCard from '../components/PropertyCard';
+import { KeyValue, Muted, Screen, Section } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getPropertiesForAgent } from '../services/PropertyService';
 import { getAgentStats } from '../services/StatsService';
-import { colors, formatPrice, spacing } from '../theme';
-
-function Stat({ value, label }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
+import { capitalise, colors, font, formatPrice, spacing } from '../theme';
 
 export default function AgentDashboardScreen({ navigation }) {
   const { user } = useAuth();
@@ -32,28 +24,21 @@ export default function AgentDashboardScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  if (!stats) return <View style={styles.screen} />;
+  if (!stats) return <Screen><Muted>Loading…</Muted></Screen>;
 
   const avg = (type) => stats.averagePrice.find((a) => a.listing_type === type);
   const maxOffers = Math.max(1, ...stats.offerCounts.map((o) => o.total_offers));
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}
-    >
-      <Text style={styles.welcome}>Welcome back, {user.fullName.split(' ')[0]}</Text>
+    <Screen onRefresh={load}>
+      <Section title="Overview">
+        <KeyValue label="Active listings" value={stats.totalActive} />
+        <KeyValue label="Drafts to review" value={stats.awaitingReview} />
+        <KeyValue label="Average sale price" value={avg('sale') ? formatPrice(avg('sale').avg_price, 'sale') : '–'} />
+        <KeyValue label="Average rent" value={avg('rent') ? formatPrice(avg('rent').avg_price, 'rent') : '–'} />
+      </Section>
 
-      <View style={styles.grid}>
-        <Stat value={stats.totalActive} label="Active listings" />
-        <Stat value={stats.awaitingReview} label="Drafts to review" />
-        <Stat value={avg('sale') ? formatPrice(avg('sale').avg_price, 'sale') : '–'} label="Average sale price" />
-        <Stat value={avg('rent') ? formatPrice(avg('rent').avg_price, 'rent') : '–'} label="Average rent" />
-      </View>
-
-      <View style={styles.panel}>
-        <Text style={styles.h2}>Offers per property</Text>
+      <Section title="Offers per property">
         {stats.offerCounts.map((o) => (
           <View key={o.property_id} style={styles.barRow}>
             <Text style={styles.barLabel} numberOfLines={1}>{o.title}</Text>
@@ -63,46 +48,27 @@ export default function AgentDashboardScreen({ navigation }) {
             <Text style={styles.barValue}>{o.total_offers}</Text>
           </View>
         ))}
-      </View>
+      </Section>
 
-      <View style={styles.panel}>
-        <Text style={styles.h2}>Active listings per user</Text>
+      <Section title="Active listings per user">
         {stats.activePerUser.map((u) => (
-          <View key={u.user_id} style={styles.userRow}>
-            <Text style={styles.userName}>{u.full_name}</Text>
-            <Text style={styles.userRole}>{u.role}</Text>
-            <Text style={styles.userCount}>{u.active_listings}</Text>
-          </View>
+          <KeyValue key={u.user_id} label={`${u.full_name} (${capitalise(u.role)})`} value={u.active_listings} />
         ))}
-      </View>
+      </Section>
 
-      <Text style={styles.h2}>Properties I manage ({managed.length})</Text>
-      <View style={{ gap: spacing.md }}>
+      <Section title={`Properties I manage (${managed.length})`}>
         {managed.map((p) => (
           <PropertyCard key={p.id} property={p} onPress={() => navigation.navigate('PropertyDetail', { id: p.id })} />
         ))}
-      </View>
-    </ScrollView>
+      </Section>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 12, gap: 14, paddingBottom: 40 },
-  welcome: { fontSize: 15, color: colors.muted },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  stat: { flexBasis: '45%', flexGrow: 1, borderWidth: 1, borderColor: '#999', padding: 8 },
-  statValue: { fontSize: 20, fontWeight: 'bold' },
-  statLabel: { fontSize: 13, color: colors.muted },
-  panel: { borderWidth: 1, borderColor: '#999', padding: 8, gap: 6 },
-  h2: { fontSize: 15, fontWeight: 'bold' },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  barLabel: { width: 120, fontSize: 13, color: colors.text },
-  barTrack: { flex: 1, height: 10, backgroundColor: '#EEEEEE' },
-  bar: { height: 10, backgroundColor: '#888888' },
-  barValue: { width: 20, textAlign: 'right', fontWeight: '700', color: colors.text },
-  userRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  userName: { flex: 1, fontSize: 14, color: colors.text },
-  userRole: { fontSize: 12, color: colors.muted, textTransform: 'capitalize' },
-  userCount: { width: 24, textAlign: 'right', fontWeight: '700', color: colors.text },
+  barLabel: { width: 120, fontSize: font.small + 1, color: colors.text },
+  barTrack: { flex: 1, height: 8, borderWidth: 1, borderColor: colors.line },
+  bar: { height: '100%', backgroundColor: colors.text },
+  barValue: { width: 24, textAlign: 'right', fontSize: font.body, color: colors.text },
 });

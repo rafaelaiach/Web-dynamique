@@ -1,33 +1,31 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { mainPhoto } from '../assets/photos';
-import { capitalise, formatPrice } from '../theme';
+import { capitalise, colors, font, formatPrice, spacing, statusLabel } from '../theme';
 import PropertyPhoto from './PropertyPhoto';
-import StatusPill from './StatusPill';
 
-/** One property in a list. `extra` is an optional line under the price (e.g. "2 pending offers"). */
-export default function PropertyCard({ property, onPress, extra, showStatus = true }) {
+/** One property in a list. `extra` is an optional last line (e.g. "2 pending offers"). */
+export default function PropertyCard({ property, onPress, extra }) {
   const p = property;
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && { opacity: 0.5 }]}>
       <PropertyPhoto photo={mainPhoto(p.image)} style={styles.image} />
       <View style={styles.body}>
         <Text style={styles.title}>{p.title}</Text>
-        {showStatus ? <StatusPill status={p.status} /> : null}
-        <Text style={styles.meta}>
-          {capitalise(p.property_type)} - {p.bedrooms} bed - {p.city} {p.postcode}
+        <Text style={styles.text}>{formatPrice(p.price, p.listing_type)}</Text>
+        <Text style={styles.muted}>
+          {capitalise(p.property_type)}, {p.bedrooms} bed, {p.city} · {statusLabel(p.status)}
         </Text>
-        <Text style={styles.price}>{formatPrice(p.price, p.listing_type)}</Text>
-        {extra ? <Text>{extra}</Text> : null}
+        {extra ? <Text style={styles.muted}>{extra}</Text> : null}
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', borderWidth: 1, borderColor: '#999', paddingLeft: 4, paddingTop: 6, paddingBottom: 2 },
-  image: { width: 80, height: 70 },
-  body: { flex: 1, paddingLeft: 12, paddingRight: 4 },
-  title: { fontSize: 16, fontWeight: 'bold' },
-  meta: { fontSize: 12, color: '#777', marginTop: 4 },
-  price: { fontSize: 14, marginTop: 1 },
+  card: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderColor: colors.faint },
+  image: { width: 88, height: 72 },
+  body: { flex: 1, gap: 2 },
+  title: { fontSize: font.body, color: colors.text },
+  text: { fontSize: font.body, color: colors.text },
+  muted: { fontSize: font.small, color: colors.muted },
 });

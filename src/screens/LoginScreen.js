@@ -1,15 +1,16 @@
 // Week 2 requirement: first user input (email + password), checked against the database.
 
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Chip from '../components/Chip';
 import PrimaryButton from '../components/PrimaryButton';
 import TextField from '../components/TextField';
+import { ErrorText, Muted, P, Row, Screen, Section, styles as ui } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getDatabaseInfo } from '../db/database';
 import { DEMO_PASSWORD } from '../db/seed';
 import { validateLogin } from '../services/AuthService';
-import { colors, radius, spacing } from '../theme';
 
 const DEMO_ACCOUNTS = [
   { role: 'Buyer', email: 'buyer@cityestate.com' },
@@ -47,88 +48,40 @@ export default function LoginScreen({ navigation }) {
     }
   }
 
-  function fillDemoAccount(account) {
-    setEmail(account.email);
-    setPassword(DEMO_PASSWORD);
-    setErrors({});
-    setFormError('');
-  }
-
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            <Text style={styles.title}>City Estate</Text>
-            <Text style={styles.subtitle}>Buy, sell and rent property</Text>
-          </View>
+    <SafeAreaView style={ui.flex}>
+      <Screen style={{ paddingTop: 48 }}>
+        <Text style={[ui.title, { fontSize: 28 }]}>City Estate</Text>
+        <Muted>Buy, sell and rent property.</Muted>
 
-          <View style={styles.form}>
-            <TextField
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="name@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={errors.email}
-            />
-            <TextField
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Your password"
-              secureTextEntry
-              error={errors.password}
-              onSubmitEditing={handleLogin}
-            />
-            {formError ? <Text style={styles.formError}>{formError}</Text> : null}
-            <PrimaryButton title="Log in" onPress={handleLogin} loading={loading} />
-            <Pressable onPress={() => navigation.navigate('Register')} style={styles.link}>
-              <Text style={styles.linkText}>No account? <Text style={styles.linkBold}>Register</Text></Text>
-            </Pressable>
-          </View>
+        <TextField label="Email" value={email} onChangeText={setEmail} placeholder="name@example.com"
+          keyboardType="email-address" autoCapitalize="none" autoCorrect={false} error={errors.email} />
+        <TextField label="Password" value={password} onChangeText={setPassword} placeholder="Password"
+          secureTextEntry error={errors.password} onSubmitEditing={handleLogin} />
+        <ErrorText>{formError}</ErrorText>
+        <PrimaryButton title="Log in" onPress={handleLogin} loading={loading} />
+        <Pressable onPress={() => navigation.navigate('Register')}>
+          <P style={{ textDecorationLine: 'underline' }}>Create an account</P>
+        </Pressable>
 
-          <View style={styles.demo}>
-            <Text style={styles.demoTitle}>Demo accounts (password: {DEMO_PASSWORD})</Text>
-            <View style={styles.demoRow}>
-              {DEMO_ACCOUNTS.map((a) => (
-                <Pressable key={a.role} onPress={() => fillDemoAccount(a)} style={styles.demoBtn}>
-                  <Text style={styles.demoBtnText}>{a.role}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+        <Section title="Demo accounts">
+          <Muted>Password: {DEMO_PASSWORD}</Muted>
+          <Row>
+            {DEMO_ACCOUNTS.map((a) => (
+              <Chip key={a.role} label={a.role} selected={email === a.email}
+                onPress={() => { setEmail(a.email); setPassword(DEMO_PASSWORD); setErrors({}); setFormError(''); }} />
+            ))}
+          </Row>
+        </Section>
 
-          <Text style={[styles.db, dbError && { color: colors.error }]}>
-            {dbError
-              ? `Database error: ${dbError}`
-              : dbInfo
-                ? `Connected to ${dbInfo.name} · ${dbInfo.tables.length} tables · ${dbInfo.properties} properties`
-                : 'Connecting to database…'}
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Muted>
+          {dbError
+            ? `Database error: ${dbError}`
+            : dbInfo
+              ? `Connected to ${dbInfo.name} · ${dbInfo.tables.length} tables · ${dbInfo.properties} properties`
+              : 'Connecting to database…'}
+        </Muted>
+      </Screen>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: { flexGrow: 1, paddingTop: 70, paddingLeft: 18, paddingRight: 12, gap: 14 },
-  header: { marginBottom: 10 },
-      title: { fontSize: 26, fontWeight: 'bold' },
-  subtitle: { fontSize: 14, color: colors.muted, marginLeft: 2 },
-  form: { gap: 9 },
-  formError: { backgroundColor: colors.errorSoft, color: colors.error, padding: spacing.md, borderRadius: radius, fontSize: 14 },
-  link: { paddingVertical: 6 },
-  linkText: { color: colors.muted, fontSize: 14 },
-  linkBold: { textDecorationLine: 'underline' },
-  demo: { gap: 5, marginTop: 20 },
-  demoTitle: { fontSize: 12, color: colors.muted },
-  demoRow: { flexDirection: 'row', gap: 6 },
-  demoBtn: { paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#999' },
-  demoBtnText: { fontSize: 13 },
-  db: { fontSize: 11, color: '#777', marginTop: 8 },
-});

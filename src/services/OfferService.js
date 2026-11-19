@@ -131,3 +131,25 @@ export async function cancelDeal(propertyId, user) {
     await applyStatusChange(db, propertyId, 'active', user.id, 'Deal fell through, back on the market');
   });
 }
+
+/** Buyer withdraws one of their own pending offers or applications. */
+export async function withdraw(kind, id, buyer) {
+  const table = TABLES[kind];
+  const db = await getDb();
+  const row = await db.getFirstAsync(`SELECT * FROM ${table} WHERE id = ?`, id);
+  if (!row || row.buyer_id !== buyer.id) throw new Error('Not found');
+  if (row.status !== 'pending') throw new Error('Only pending items can be withdrawn');
+  await db.runAsync(`UPDATE ${table} SET status = 'withdrawn', decided_at = datetime('now') WHERE id = ?`, id);
+}
+
+/** Everything a buyer has sent, for the My activity screen. */
+export async function getBuyerActivity(buyerId) {
+  const db = await getDb();
+  const [offers, applications] = await Promise.all([
+    db.getAllAsync(`SELECT o.*, p.title, p.status AS property_status FROM offers o
+                    JOIN properties p ON p.id = o.property_id WHERE o.buyer_id = ? ORDER BY o.id DESC`, buyerId),
+    db.getAllAsync(`SELECT a.*, p.title, p.status AS property_status FROM rental_applications a
+                    JOIN properties p ON p.id = a.property_id WHERE a.buyer_id = ? ORDER BY a.id DESC`, buyerId),
+  ]);
+  return { offers, applications };
+}

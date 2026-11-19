@@ -91,6 +91,11 @@ export async function seedDatabase(db) {
       byTitle['Oak Lane Studio'], buyer, 205000
     );
     await db.runAsync('INSERT INTO favourites (user_id, property_id) VALUES (?, ?)', buyer, byTitle['Riverside Flat']);
+    // One question and one rental application, so those screens are not empty either.
+    await db.runAsync('INSERT INTO enquiries (property_id, buyer_id, message) VALUES (?, ?, ?)',
+      byTitle['Jackson Avenue'], buyer, 'Is the garden shared with the neighbours?');
+    await db.runAsync('INSERT INTO rental_applications (property_id, buyer_id, move_in_date, notes) VALUES (?, ?, ?, ?)',
+      byTitle['Riverside Flat'], buyer, '2027-01-10', 'Working in Leeds city centre, no pets.');
   });
   return true;
 }

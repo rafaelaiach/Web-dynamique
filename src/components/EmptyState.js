@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '../theme';
+import { colors, font, spacing } from '../theme';
 
 export default function EmptyState({ title, message }) {
   return (
@@ -11,7 +11,7 @@ export default function EmptyState({ title, message }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.xl, gap: spacing.sm },
-  title: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  message: { fontSize: 14, color: colors.muted, textAlign: 'center' },
+  wrap: { paddingVertical: spacing.lg, gap: spacing.xs },
+  title: { fontSize: font.body, color: colors.text },
+  message: { fontSize: font.small, color: colors.muted },
 });

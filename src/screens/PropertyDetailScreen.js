@@ -1,19 +1,23 @@
-// Full details of one property, its status history, and a favourite toggle for buyers.
-// Week 3: the owner (seller) can edit, publish / unpublish, review offers and delete here.
-// The buyer "Make an offer" / "Apply to rent" buttons are still to be wired up (buyer screens).
+// Full details of one property and its status history, with the actions of each role:
+// buyer: favourite, make an offer / apply to rent, ask a question
+// seller (owner): edit, publish / unpublish, review offers, delete
+// agent (managing): change status, review offers
 
 import { useCallback, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { propertyPhotos } from '../assets/photos';
 import EmptyState from '../components/EmptyState';
 import PrimaryButton from '../components/PrimaryButton';
 import PropertyPhoto from '../components/PropertyPhoto';
-import StatusPill from '../components/StatusPill';
+import TextField from '../components/TextField';
+import { ErrorText, Item, KeyValue, Muted, P, Screen, Section, Title } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
+import { agentChangeStatus } from '../services/AgentService';
+import { sendEnquiry } from '../services/EnquiryService';
 import { canDelete, changeStatus } from '../services/ListingLifecycle';
 import { deleteListing, getPropertyById, isFavourite, toggleFavourite } from '../services/PropertyService';
-import { capitalise, colors, formatPrice, spacing } from '../theme';
+import { capitalise, formatPrice, spacing, statusLabel } from '../theme';
 
 export default function PropertyDetailScreen({ route, navigation }) {
   const { id } = route.params;
@@ -21,7 +25,9 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const [property, setProperty] = useState(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [ownerError, setOwnerError] = useState('');
+  const [error, setError] = useState('');
+  const [question, setQuestion] = useState('');
+  const [questionSent, setQuestionSent] = useState(false);
   const { width } = useWindowDimensions();
 
   // Reload every time the screen comes back into view (e.g. after editing).
@@ -33,9 +39,18 @@ export default function PropertyDetailScreen({ route, navigation }) {
   }, [id, user]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function setStatus(to, note) {
-    setOwnerError('');
-    try { await changeStatus(id, to, user.id, note); await load(); } catch (e) { setOwnerError(e.message); }
+  async function run(action) {
+    setError('');
+    try { await action(); await load(); } catch (e) { setError(e.message); }
+  }
+
+  async function ask() {
+    setError('');
+    try {
+      await sendEnquiry(user, id, question);
+      setQuestion('');
+      setQuestionSent(true);
+    } catch (e) { setError(e.message); }
   }
 
   function confirmDelete() {
@@ -43,115 +58,117 @@ export default function PropertyDetailScreen({ route, navigation }) {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
-          try { await deleteListing(user, id); navigation.goBack(); } catch (e) { setOwnerError(e.message); }
+          try { await deleteListing(user, id); navigation.goBack(); } catch (e) { setError(e.message); }
         },
       },
     ]);
   }
 
-  if (loading) return <View style={styles.center}><ActivityIndicator /></View>;
-  if (!property) return <EmptyState title="Property not found" message="It may have been removed." />;
+  if (loading) return <Screen><Muted>Loading…</Muted></Screen>;
+  if (!property) return <Screen><EmptyState title="Property not found." message="It may have been deleted." /></Screen>;
 
   const p = property;
+  const isSale = p.listing_type === 'sale';
   const isBuyer = user.role === 'buyer';
-  const canAct = isBuyer && p.status === 'active';
   const isOwner = user.role === 'seller' && p.seller_id === user.id;
+  const isAgent = user.role === 'agent' && p.agent_id === user.id;
   const done = p.status === 'sold' || p.status === 'rented';
-  const noun = p.listing_type === 'sale' ? 'offers' : 'applications';
+  const noun = isSale ? 'offers' : 'applications';
   const photos = propertyPhotos(p.image);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <Screen style={{ paddingTop: 0, paddingHorizontal: 0 }}>
       {/* Swipe left/right to see more photos */}
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
         {(photos.length ? photos : [null]).map((photo, i) => (
           <PropertyPhoto key={i} photo={photo} style={[styles.image, { width }]} />
         ))}
       </ScrollView>
-      {photos.length ? (
-        <Text style={styles.credit}>
-          {photos.length} photos - swipe to see more. Photos: {[...new Set(photos.map((ph) => ph.credit))].join(', ')} / Unsplash
-        </Text>
-      ) : null}
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{p.title}</Text>
-        <StatusPill status={p.status} />
-      </View>
-      <Text style={styles.price}>{formatPrice(p.price, p.listing_type)}</Text>
-      <Text style={styles.facts}>
-        {capitalise(p.property_type)} · {p.bedrooms} bed · {p.bathrooms} bath · {p.listing_type === 'sale' ? 'For sale' : 'To rent'}
-      </Text>
-      <Text style={styles.address}>{p.address_line}, {p.city} {p.postcode}</Text>
-      <Text style={styles.body}>{p.description}</Text>
-      <Text style={styles.meta}>Seller: {p.seller_name}{p.agent_name ? ` · Agent: ${p.agent_name}` : ''}</Text>
 
-      {isBuyer ? (
-        <View style={styles.actions}>
-          <PrimaryButton
-            title={saved ? '♥ Saved to favourites' : '♡ Save to favourites'}
-            variant="outline"
-            onPress={async () => setSaved(await toggleFavourite(user.id, p.id))}
-          />
-          <PrimaryButton
-            title={p.listing_type === 'sale' ? 'Make an offer (Week 3)' : 'Apply to rent (Week 3)'}
-            disabled
-          />
-          {!canAct ? <Text style={styles.note}>This property is under offer, so new offers are closed.</Text> : null}
-        </View>
-      ) : null}
+      <Screen.Body>
+        {photos.length ? (
+          <Muted>{photos.length} photos, swipe for more. Photos: {[...new Set(photos.map((ph) => ph.credit))].join(', ')} / Unsplash</Muted>
+        ) : null}
+        <Title>{p.title}</Title>
+        <P>{formatPrice(p.price, p.listing_type)} · {statusLabel(p.status)}</P>
+        <Muted>{p.address_line}, {p.city} {p.postcode}</Muted>
+        <P>{p.description}</P>
 
-      {isOwner ? (
-        <View style={styles.actions}>
-          <Text style={styles.h2}>Manage listing</Text>
-          {!done ? <PrimaryButton title="Edit listing" onPress={() => navigation.navigate('EditListing', { id: p.id })} /> : null}
-          {p.status === 'draft' ? <PrimaryButton title="Publish (make Active)" onPress={() => setStatus('active', 'Published by seller')} /> : null}
-          {p.status === 'active' ? (
-            <PrimaryButton title="Unpublish (back to draft)" variant="outline" onPress={() => setStatus('draft', 'Unpublished by seller')} />
-          ) : null}
-          {p.status !== 'draft' ? (
-            <PrimaryButton title={`Review ${noun} (${p.pending_offers} pending)`}
-              onPress={() => navigation.navigate('ReviewOffers', { id: p.id })} />
-          ) : null}
-          {canDelete(p.status) ? <PrimaryButton title="Delete listing" variant="outline" onPress={confirmDelete} /> : null}
-          {p.status === 'under_offer' ? <Text style={styles.note}>Price, type and location are locked while under offer.</Text> : null}
-          {ownerError ? <Text style={styles.note}>{ownerError}</Text> : null}
-        </View>
-      ) : null}
+        <Section title="Details">
+          <KeyValue label="Type" value={isSale ? 'For sale' : 'To rent'} />
+          <KeyValue label="Property" value={capitalise(p.property_type)} />
+          <KeyValue label="Bedrooms" value={p.bedrooms} />
+          <KeyValue label="Bathrooms" value={p.bathrooms} />
+          <KeyValue label="Seller" value={p.seller_name} />
+          <KeyValue label="Agent" value={p.agent_name || '–'} />
+        </Section>
 
-      <View style={styles.history}>
-        <Text style={styles.h2}>Status history</Text>
-        {p.history.map((h) => (
-          <View key={h.id} style={styles.historyRow}>
-            <Text style={styles.historyText}>
-              {h.from_status ? `${colors.status[h.from_status].label} → ` : ''}{colors.status[h.to_status].label}
-            </Text>
-            {h.note ? <Text style={styles.historyMeta}>{h.note}</Text> : null}
-            <Text style={styles.historyMeta}>{h.changed_by_name} · {h.changed_at.slice(0, 16)}</Text>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+        {isBuyer ? (
+          <Section title="Interested?">
+            {p.status === 'active' ? (
+              <PrimaryButton title={isSale ? 'Make an offer' : 'Apply to rent'}
+                onPress={() => navigation.navigate('MakeOffer', { id: p.id })} />
+            ) : <Muted>This property is {statusLabel(p.status).toLowerCase()}, so new {noun} are closed.</Muted>}
+            <PrimaryButton title={saved ? 'Saved (tap to remove)' : 'Save to favourites'} variant="outline"
+              onPress={async () => setSaved(await toggleFavourite(user.id, p.id))} />
+            <TextField label="Ask a question" value={question} onChangeText={(t) => { setQuestion(t); setQuestionSent(false); }}
+              multiline placeholder="e.g. Is parking included?" />
+            <PrimaryButton title="Send question" variant="outline" onPress={ask} disabled={!question.trim()} />
+            {questionSent ? <Muted>Question sent. The answer will appear in Activity.</Muted> : null}
+          </Section>
+        ) : null}
+
+        {isOwner ? (
+          <Section title="Manage listing">
+            {!done ? <PrimaryButton title="Edit listing" onPress={() => navigation.navigate('EditListing', { id: p.id })} /> : null}
+            {p.status === 'draft' ? (
+              <PrimaryButton title="Publish" variant="outline" onPress={() => run(() => changeStatus(id, 'active', user.id, 'Published by seller'))} />
+            ) : null}
+            {p.status === 'active' ? (
+              <PrimaryButton title="Unpublish (back to draft)" variant="outline"
+                onPress={() => run(() => changeStatus(id, 'draft', user.id, 'Unpublished by seller'))} />
+            ) : null}
+            {p.status !== 'draft' ? (
+              <PrimaryButton title={`Review ${noun} (${p.pending_offers} pending)`} variant="outline"
+                onPress={() => navigation.navigate('ReviewOffers', { id: p.id })} />
+            ) : null}
+            {canDelete(p.status) ? <PrimaryButton title="Delete listing" variant="outline" onPress={confirmDelete} /> : null}
+            {p.status === 'under_offer' ? <Muted>Price, type and location are locked while under offer.</Muted> : null}
+          </Section>
+        ) : null}
+
+        {isAgent ? (
+          <Section title="Agent">
+            {p.status === 'draft' ? (
+              <PrimaryButton title="Review this draft" onPress={() => navigation.navigate('Review')} />
+            ) : null}
+            {p.status === 'active' ? (
+              <PrimaryButton title="Take off the market (back to draft)" variant="outline"
+                onPress={() => run(() => agentChangeStatus(id, user, 'draft'))} />
+            ) : null}
+            {p.status !== 'draft' ? (
+              <PrimaryButton title={`Review ${noun} (${p.pending_offers} pending)`} variant="outline"
+                onPress={() => navigation.navigate('ReviewOffers', { id: p.id })} />
+            ) : null}
+          </Section>
+        ) : null}
+
+        <ErrorText>{error}</ErrorText>
+
+        <Section title="Status history">
+          {p.history.map((h) => (
+            <Item key={h.id}>
+              <P>{h.from_status && h.from_status !== h.to_status ? `${statusLabel(h.from_status)} → ` : ''}{statusLabel(h.to_status)}</P>
+              {h.note ? <Muted>{h.note}</Muted> : null}
+              <Muted>{h.changed_by_name}, {h.changed_at.slice(0, 16)}</Muted>
+            </Item>
+          ))}
+        </Section>
+      </Screen.Body>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { paddingBottom: spacing.xl * 2, gap: spacing.sm },
-  image: { height: 220 },
-  credit: { fontSize: 10, color: '#777', paddingHorizontal: 10 },
-  titleRow: { paddingHorizontal: 10, marginTop: spacing.md },
-  title: { fontSize: 20, fontWeight: 'bold' },
-  price: { fontSize: 18, paddingHorizontal: 14 },
-  facts: { fontSize: 14, paddingHorizontal: 10 },
-  address: { fontSize: 14, color: colors.muted, paddingHorizontal: spacing.lg },
-  body: { fontSize: 14, paddingHorizontal: 18, marginTop: 4 },
-  meta: { fontSize: 13, color: colors.muted, paddingHorizontal: spacing.lg },
-  actions: { gap: spacing.md, padding: spacing.lg },
-  note: { fontSize: 13, color: colors.muted, textAlign: 'center' },
-  history: { margin: 10, marginTop: 20, padding: 8, borderTopWidth: 1, borderColor: '#999', gap: 4 },
-  h2: { fontSize: 15, fontWeight: 'bold', textDecorationLine: 'underline' },
-  historyRow: { gap: 2 },
-  historyText: { fontSize: 14, color: colors.text, fontWeight: '600' },
-  historyMeta: { fontSize: 12, color: colors.muted },
+  image: { height: 240, marginBottom: spacing.xs },
 });

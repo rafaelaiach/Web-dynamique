@@ -182,3 +182,10 @@ export async function deleteListing(user, propertyId) {
 }
 
 export { LOCKED_FIELDS };
+
+/** The buyer's saved properties. */
+export async function getFavourites(userId) {
+  const db = await getDb();
+  return db.getAllAsync(
+    `${BASE_SELECT} JOIN favourites f ON f.property_id = p.id AND f.user_id = ? ORDER BY f.created_at DESC`, userId);
+}

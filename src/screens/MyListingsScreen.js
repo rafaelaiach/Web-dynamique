@@ -1,15 +1,14 @@
-// Seller home: every property the logged-in seller owns, with its status and pending offers.
-// Week 3: "+ New listing" opens the form; tap a listing to edit, publish, review offers or delete.
+// Seller home: every property the seller owns, with its status and pending offers.
+// "+ New listing" opens the form; tap a listing to edit, publish, review offers or delete.
 
 import { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import EmptyState from '../components/EmptyState';
 import PrimaryButton from '../components/PrimaryButton';
 import PropertyCard from '../components/PropertyCard';
+import { Muted, Screen } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getPropertiesForSeller } from '../services/PropertyService';
-import { colors, spacing } from '../theme';
 
 export default function MyListingsScreen({ navigation }) {
   const { user } = useAuth();
@@ -17,50 +16,28 @@ export default function MyListingsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
     setListings(await getPropertiesForSeller(user.id));
     setLoading(false);
   }, [user.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const counts = listings.reduce((acc, p) => ({ ...acc, [p.status]: (acc[p.status] || 0) + 1 }), {});
+  const count = (s) => listings.filter((p) => p.status === s).length;
+  const pendingText = (p) => (p.pending_offers > 0
+    ? `${p.pending_offers} pending ${p.listing_type === 'sale' ? 'offer' : 'application'}${p.pending_offers === 1 ? '' : 's'}`
+    : null);
 
   return (
-    <FlatList
-      style={styles.list}
-      contentContainerStyle={styles.content}
-      data={listings}
-      keyExtractor={(p) => String(p.id)}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <Text style={styles.summary}>
-            {listings.length} total · {counts.active || 0} active · {counts.under_offer || 0} under offer · {counts.draft || 0} draft
-          </Text>
-          <PrimaryButton title="+ New listing" onPress={() => navigation.navigate('EditListing')} />
-        </View>
-      }
-      renderItem={({ item }) => (
-        <PropertyCard
-          property={item}
-          extra={item.pending_offers > 0
-            ? `${item.pending_offers} pending ${item.listing_type === 'sale' ? 'offer' : 'application'}${item.pending_offers === 1 ? '' : 's'}`
-            : null}
-          onPress={() => navigation.navigate('PropertyDetail', { id: item.id })}
-        />
-      )}
-      ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-      ListEmptyComponent={loading ? null : (
-        <EmptyState title="No listings yet" message="Your properties will appear here once you add them." />
-      )}
-    />
+    <Screen onRefresh={load}>
+      <PrimaryButton title="+ New listing" onPress={() => navigation.navigate('EditListing')} />
+      <Muted>
+        {listings.length} listings · {count('active')} active · {count('under_offer')} under offer · {count('draft')} draft
+      </Muted>
+      {listings.map((p) => (
+        <PropertyCard key={p.id} property={p} extra={pendingText(p)}
+          onPress={() => navigation.navigate('PropertyDetail', { id: p.id })} />
+      ))}
+      {!loading && !listings.length ? <EmptyState title="No listings yet." message="Tap + New listing to add one." /> : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 10, paddingBottom: 40 },
-  header: { gap: 8, marginBottom: 10 },
-  summary: { fontSize: 13, color: colors.muted },
-});

@@ -1,26 +1,28 @@
-// Shared colours and spacing.
+// One style for the whole app: black on white, one font size scale, one spacing unit.
 
 export const colors = {
   background: '#FFFFFF',
-  card: '#FFFFFF',
   text: '#000000',
-  muted: '#777777',
-  border: '#999999',
-  primary: '#000000',
-  accent: '#000000',
-  error: '#000000',
-  errorSoft: '#EEEEEE',
-  status: {
-    draft: { bg: 'transparent', fg: '#000000', label: 'draft' },
-    active: { bg: 'transparent', fg: '#000000', label: 'Active' },
-    under_offer: { bg: 'transparent', fg: '#000000', label: 'under offer' },
-    sold: { bg: 'transparent', fg: '#000000', label: 'SOLD' },
-    rented: { bg: 'transparent', fg: '#000000', label: 'Rented' },
-  },
+  muted: '#666666',
+  line: '#000000',
+  faint: '#DDDDDD',
 };
 
-export const spacing = { xs: 3, sm: 7, md: 10, lg: 15, xl: 22 };
-export const radius = 0;
+export const spacing = { xs: 4, sm: 8, md: 16, lg: 24 };
+
+export const font = { small: 12, body: 15, title: 22, heading: 13 };
+
+export const STATUS_LABELS = {
+  draft: 'Draft',
+  active: 'Active',
+  under_offer: 'Under offer',
+  sold: 'Sold',
+  rented: 'Rented',
+};
+
+export function statusLabel(status) {
+  return STATUS_LABELS[status] || status;
+}
 
 export function formatPrice(price, listingType) {
   const text = '£' + Math.round(price).toLocaleString('en-GB');

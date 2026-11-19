@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { colors, font } from '../theme';
 
 // Mocked property image (the brief allows mocked images).
 export default function NoImage({ style }) {
@@ -10,6 +11,6 @@ export default function NoImage({ style }) {
 }
 
 const styles = StyleSheet.create({
-  box: { backgroundColor: '#CCCCCC', alignItems: 'center', justifyContent: 'center' },
-  text: { fontSize: 11, color: '#555555' },
+  box: { borderWidth: 1, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  text: { fontSize: font.small, color: colors.muted },
 });

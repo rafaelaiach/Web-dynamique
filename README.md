@@ -30,20 +30,27 @@ The login screen has buttons that fill these in.
 | Three GUI screens besides login | Buyer **Browse** (`HomeScreen.js`), Seller **My listings** (`MyListingsScreen.js`), Agent **Dashboard** (`AgentDashboardScreen.js`), plus Property detail and Profile |
 | Database connection | `src/db/database.js` (expo-sqlite). The login screen shows "Connected to cityestate.db · 9 tables" |
 
-## Week 3 (seller + data services, by Rafael)
+## Week 3 checklist (at least 3 features per role)
 
-Seller features, log in as `seller@cityestate.com`:
+| Role | Features | Screens |
+|---|---|---|
+| Buyer | 1. Browse with filters and favourites · 2. Make an offer / apply to rent · 3. Ask a question · 4. My activity (offers, applications, answers, favourites, withdraw) | Browse, Property, Make an offer, Activity |
+| Seller | 1. Create a listing · 2. Edit / publish / unpublish / delete · 3. Review offers and applications (accept, reject, sold / rented, deal fell through) · 4. Answer questions | Listings, Listing form, Offers, Questions |
+| Agent | 1. Statistics dashboard · 2. Review drafts (approve and publish, or send back with a reason) · 3. Change the status of managed properties and decide on their offers · 4. Answer questions | Dashboard, Review, Property, Offers, Questions |
 
-1. **Create a listing**: "+ New listing" on My listings. Saved as Draft, with validation (title, price, UK postcode, rooms).
-2. **Edit / publish / delete**: open a listing → Manage listing. Publish (Draft → Active), unpublish, edit, delete (Draft or Active only). From Under Offer on, price, type and location are shown as locked.
-3. **Review offers / applications**: accept or reject. Accepting one rejects the others and moves the property to Under Offer, in one transaction. Then mark it Sold / Rented, or "Deal fell through" (back to Active).
+Rules that always apply (services + database triggers):
 
-Shared services the buyer and agent screens can reuse:
+- Accepting an offer or application rejects the others and puts the property Under Offer, in one transaction.
+- Price, type and location are locked from Under Offer on. Sold / Rented cannot go back to Active.
+- Every status change is written to the status history (shown on the property page, with notes).
 
-- `services/ListingLifecycle.js`: `allowedTransitions`, `isFieldLocked`, `canDelete`, `changeStatus` (always writes the status history).
-- `services/OfferService.js`: `makeOffer`, `applyToRent` (ready for the buyer buttons), `getDecisionsForProperty`, `acceptOffer` / `rejectOffer`, `acceptApplication` / `rejectApplication`, `completeDeal`, `cancelDeal`. Accept / reject work for the seller **or the managing agent**.
+Services: `ListingLifecycle`, `OfferService`, `EnquiryService`, `AgentService`, `PropertyService`, `StatsService`.
 
-Still to do (Pierre): buyer "Make an offer" / "Apply to rent" screens, enquiries, My activity; agent status changes and listing validation.
+### Interface
+
+One minimal black and white style for every screen: black text on white, thin black lines, black buttons
+(white with a black border for secondary actions), text-only tabs. All screens are built from
+`src/components/ui.js` (Screen, Section, Item, KeyValue...) and the sizes in `src/theme.js`.
 
 ## Folder structure
 
@@ -51,14 +58,14 @@ Still to do (Pierre): buyer "Make an offer" / "Apply to rent" screens, enquiries
 App.js                 opens the database, then shows the navigator
 src/
   assets/              photos.js: real property photos (Unsplash, free licence)
-  components/          PropertyCard, StatusPill, TextField, PrimaryButton, Chip, EmptyState, PropertyPhoto, NoImage (shown if a photo can't load)
+  components/          ui.js (shared layout pieces), PropertyCard, TextField, PrimaryButton, Chip, EmptyState, PropertyPhoto, NoImage
   context/             AuthContext (logged-in user)
   db/                  database.js, schema.js (tables, triggers, views), seed.js (demo data)
   navigation/          RootNavigator: login stack, then tabs for the user's role
   screens/             one file per screen
-  services/            AuthService, PropertyService, StatsService (all SQL lives here)
-  theme.js             colours, spacing, price formatting
-tests/                 npm test: 50 checks against a real SQLite database
+  services/            Auth, Property, Stats, ListingLifecycle, Offer, Enquiry, Agent (all SQL lives here)
+  theme.js             black / white colours, spacing, font sizes, price formatting
+tests/                 npm test: 63 checks against a real SQLite database
 ```
 
 ## Database rules (enforced by SQLite itself)

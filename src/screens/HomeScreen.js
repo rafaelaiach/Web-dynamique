@@ -2,15 +2,15 @@
 // filtered by sale vs rent, location, property type and price range.
 
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Chip from '../components/Chip';
 import EmptyState from '../components/EmptyState';
 import PropertyCard from '../components/PropertyCard';
 import TextField from '../components/TextField';
-import { useAuth } from '../context/AuthContext';
+import { ErrorText, Muted, P, Row, Screen } from '../components/ui';
 import { searchProperties } from '../services/PropertyService';
-import { capitalise, colors, PROPERTY_TYPES, spacing } from '../theme';
+import { capitalise, PROPERTY_TYPES } from '../theme';
 
 const LISTING_TYPES = [
   { value: null, label: 'All' },
@@ -19,7 +19,6 @@ const LISTING_TYPES = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { user } = useAuth();
   const [listingType, setListingType] = useState(null);
   const [propertyType, setPropertyType] = useState(null);
   const [city, setCity] = useState('');
@@ -47,69 +46,38 @@ export default function HomeScreen({ navigation }) {
 
   const onlyDigits = (setter) => (text) => setter(text.replace(/[^0-9]/g, ''));
 
-  const header = (
-    <View style={styles.header}>
-      <Text style={styles.greeting}>Hello {user.fullName.split(' ')[0]}</Text>
-      <TextField value={city} onChangeText={setCity} placeholder="Search city or postcode" autoCorrect={false} />
-      <View style={styles.chips}>
+  return (
+    <Screen onRefresh={load}>
+      <TextField value={city} onChangeText={setCity} placeholder="City or postcode" autoCorrect={false} />
+      <Row>
         {LISTING_TYPES.map((t) => (
           <Chip key={t.label} label={t.label} selected={listingType === t.value} onPress={() => setListingType(t.value)} />
         ))}
-        <Pressable onPress={() => setShowMore((v) => !v)} style={styles.more}>
-          <Text style={styles.moreText}>{showMore ? 'Fewer filters' : 'More filters'}</Text>
-        </Pressable>
-      </View>
+      </Row>
+      <Pressable onPress={() => setShowMore((v) => !v)}>
+        <P style={{ textDecorationLine: 'underline' }}>{showMore ? 'Hide filters' : 'More filters'}</P>
+      </Pressable>
       {showMore ? (
-        <View style={styles.moreBox}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <>
+          <Row>
             <Chip label="Any type" selected={!propertyType} onPress={() => setPropertyType(null)} />
             {PROPERTY_TYPES.map((t) => (
               <Chip key={t} label={capitalise(t)} selected={propertyType === t} onPress={() => setPropertyType(t)} />
             ))}
-          </ScrollView>
-          <View style={styles.priceRow}>
-            <TextField style={{ flex: 1 }} value={minPrice} onChangeText={onlyDigits(setMinPrice)} placeholder="Min £" keyboardType="number-pad" />
-            <TextField style={{ flex: 1 }} value={maxPrice} onChangeText={onlyDigits(setMaxPrice)} placeholder="Max £" keyboardType="number-pad" />
-          </View>
-        </View>
+          </Row>
+          <Row style={{ flexWrap: 'nowrap' }}>
+            <TextField style={{ flex: 1 }} label="Min price (£)" value={minPrice} onChangeText={onlyDigits(setMinPrice)} keyboardType="number-pad" />
+            <TextField style={{ flex: 1 }} label="Max price (£)" value={maxPrice} onChangeText={onlyDigits(setMaxPrice)} keyboardType="number-pad" />
+          </Row>
+        </>
       ) : null}
-      <Text style={styles.count}>
-        {loading ? 'Loading…' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'}`}
-      </Text>
-      {error ? <Text style={styles.error}>Could not load properties: {error}</Text> : null}
-    </View>
-  );
 
-  return (
-    <FlatList
-      style={styles.list}
-      contentContainerStyle={styles.content}
-      data={properties}
-      keyExtractor={(p) => String(p.id)}
-      ListHeaderComponent={header}
-      keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}
-      renderItem={({ item }) => (
-        <PropertyCard property={item} onPress={() => navigation.navigate('PropertyDetail', { id: item.id })} />
-      )}
-      ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-      ListEmptyComponent={loading ? null : (
-        <EmptyState title="No properties match" message="Try another city or remove a filter." />
-      )}
-    />
+      <Muted>{loading ? 'Loading…' : `${properties.length} ${properties.length === 1 ? 'property' : 'properties'}`}</Muted>
+      <ErrorText>{error ? `Could not load properties: ${error}` : ''}</ErrorText>
+      {properties.map((p) => (
+        <PropertyCard key={p.id} property={p} onPress={() => navigation.navigate('PropertyDetail', { id: p.id })} />
+      ))}
+      {!loading && !properties.length ? <EmptyState title="No properties match." message="Try another city or remove a filter." /> : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 10, paddingBottom: 40 },
-  header: { gap: 8, marginBottom: 12 },
-  greeting: { fontSize: 20 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' },
-  more: { paddingHorizontal: spacing.sm, paddingVertical: 6 },
-  moreText: { textDecorationLine: 'underline', fontSize: 13 },
-  moreBox: { gap: spacing.md },
-  priceRow: { flexDirection: 'row', gap: spacing.md },
-  count: { fontSize: 13, color: colors.muted },
-  error: { color: colors.error },
-});

@@ -24,7 +24,7 @@ export default function App() {
           <Text style={styles.error}>Could not open the database: {dbError}</Text>
         ) : (
           <>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={colors.text} />
             <Text style={styles.text}>Opening database…</Text>
           </>
         )}
@@ -47,5 +47,5 @@ export default function App() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: colors.background },
   text: { color: colors.muted },
-  error: { color: colors.error, textAlign: 'center' },
+  error: { color: colors.text, textAlign: 'center' },
 });
