@@ -30,6 +30,21 @@ The login screen has buttons that fill these in.
 | Three GUI screens besides login | Buyer **Browse** (`HomeScreen.js`), Seller **My listings** (`MyListingsScreen.js`), Agent **Dashboard** (`AgentDashboardScreen.js`), plus Property detail and Profile |
 | Database connection | `src/db/database.js` (expo-sqlite). The login screen shows "Connected to cityestate.db · 9 tables" |
 
+## Week 3 (seller + data services, by Rafael)
+
+Seller features, log in as `seller@cityestate.com`:
+
+1. **Create a listing**: "+ New listing" on My listings. Saved as Draft, with validation (title, price, UK postcode, rooms).
+2. **Edit / publish / delete**: open a listing → Manage listing. Publish (Draft → Active), unpublish, edit, delete (Draft or Active only). From Under Offer on, price, type and location are shown as locked.
+3. **Review offers / applications**: accept or reject. Accepting one rejects the others and moves the property to Under Offer, in one transaction. Then mark it Sold / Rented, or "Deal fell through" (back to Active).
+
+Shared services the buyer and agent screens can reuse:
+
+- `services/ListingLifecycle.js`: `allowedTransitions`, `isFieldLocked`, `canDelete`, `changeStatus` (always writes the status history).
+- `services/OfferService.js`: `makeOffer`, `applyToRent` (ready for the buyer buttons), `getDecisionsForProperty`, `acceptOffer` / `rejectOffer`, `acceptApplication` / `rejectApplication`, `completeDeal`, `cancelDeal`. Accept / reject work for the seller **or the managing agent**.
+
+Still to do (Pierre): buyer "Make an offer" / "Apply to rent" screens, enquiries, My activity; agent status changes and listing validation.
+
 ## Folder structure
 
 ```
@@ -43,7 +58,7 @@ src/
   screens/             one file per screen
   services/            AuthService, PropertyService, StatsService (all SQL lives here)
   theme.js             colours, spacing, price formatting
-tests/                 npm test: 27 checks against a real SQLite database
+tests/                 npm test: 50 checks against a real SQLite database
 ```
 
 ## Database rules (enforced by SQLite itself)
